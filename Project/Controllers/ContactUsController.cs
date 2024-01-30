@@ -2,6 +2,7 @@
 using Project.DTO;
 using Project.Interfaces.IServices;
 using Project.Models;
+using Project.Services;
 
 namespace Project.Controllers
 {
@@ -10,10 +11,12 @@ namespace Project.Controllers
     public class ContactUsController : ControllerBase
     {
         private readonly IContactUsService _contactUsService;
+        private readonly IValidationService _validationService;
 
-        public ContactUsController(IContactUsService contactUsService)
+        public ContactUsController(IContactUsService contactUsService, IValidationService validationService)
         {
             _contactUsService = contactUsService;
+            _validationService = validationService;
         }
 
         [HttpPost("add-contact", Name = "AddContact")]
@@ -23,6 +26,11 @@ namespace Project.Controllers
             {
                 ContactUsModel contact = new ContactUsModel();
 
+                var emailValidation = await _validationService.ValidateEmail(request.Email);
+                if (!emailValidation.Status)
+                {
+                    return BadRequest(emailValidation);
+                }
                 Guid ContactId = Guid.NewGuid();
                 contact.ContactId = ContactId.ToString();
                 contact.ContactNumber = request.ContactNumber;

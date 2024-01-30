@@ -13,11 +13,13 @@ namespace Project.Controllers
     {
         private readonly IAppoinmentService _appoinmentService;
         private readonly IUserService _userService;
+        private readonly IValidationService _validationService;
 
-        public AppoinmentController(IAppoinmentService appoinmentService, IUserService userService)
+        public AppoinmentController(IAppoinmentService appoinmentService, IUserService userService, IValidationService validationService)
         {
             _appoinmentService = appoinmentService;
-            _userService = userService;            
+            _userService = userService;
+            _validationService = validationService;
         }
         [HttpPost("add-appoinment", Name = "AddAppoinment")]
         public async Task<IActionResult> AddAppoinment(AppoinmentAddRequestDTO request)
@@ -28,6 +30,11 @@ namespace Project.Controllers
                 {
                     AppointmentModel appointment = new AppointmentModel();
 
+                    var emailValidation = await _validationService.ValidateEmail(request.Email);
+                    if (!emailValidation.Status)
+                    {
+                        return BadRequest(emailValidation);
+                    }
                     Guid appoinmentId = Guid.NewGuid();
                     appointment.AppointmentId = appoinmentId.ToString();
                     appointment.ServiceTypeId = request.ServiceTypeId;

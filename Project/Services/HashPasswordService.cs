@@ -5,6 +5,7 @@ using Project.Interfaces.IServices;
 using Project.Models;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using BCrypt.Net;
 using System.Text;
 
 namespace Project.Services
@@ -15,15 +16,16 @@ namespace Project.Services
         {
             try
             {
-                byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
-                Console.WriteLine($"Salt: {Convert.ToBase64String(salt)}");
+                var hashed = BCrypt.Net.BCrypt.HashPassword(password);
+                //byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
+                //Console.WriteLine($"Salt: {Convert.ToBase64String(salt)}");
 
-                string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
-                    password: password!,
-                    salt: salt,
-                    prf: KeyDerivationPrf.HMACSHA256,
-                    iterationCount: 100000,
-                    numBytesRequested: 256 / 8));
+                //string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+                //    password: password!,
+                //    salt: salt,
+                //    prf: KeyDerivationPrf.HMACSHA256,
+                //    iterationCount: 100000,
+                //    numBytesRequested: 256 / 8));
 
                 var response = new GeneralResponseInternalDTO(true, hashed);
                 return response;
@@ -39,17 +41,18 @@ namespace Project.Services
         {
             try
             {
-                byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
-                Console.WriteLine($"Salt: {Convert.ToBase64String(salt)}");
+                //byte[] salt = RandomNumberGenerator.GetBytes(128 / 8);
+                //Console.WriteLine($"Salt: {Convert.ToBase64String(salt)}");
 
-                string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
-                    password: password!,
-                    salt: salt,
-                    prf: KeyDerivationPrf.HMACSHA256,
-                    iterationCount: 100000,
-                    numBytesRequested: 256 / 8));
+                //string hashed = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+                //    password: password!,
+                //    salt: salt,
+                //    prf: KeyDerivationPrf.HMACSHA256,
+                //    iterationCount: 100000,
+                //    numBytesRequested: 256 / 8));
 
-                bool passwordMatch = hashed.Equals(hashedPassword);
+                //bool passwordMatch = hashed.Equals(hashedPassword);
+                bool passwordMatch = BCrypt.Net.BCrypt.Verify(password, hashedPassword);
 
                 if (passwordMatch)
                 {

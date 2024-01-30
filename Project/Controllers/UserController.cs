@@ -9,6 +9,7 @@ using Project.Interfaces.IServices;
 using Project.Models;
 using Project.Services;
 using System.ComponentModel.DataAnnotations;
+using System.Text;
 
 namespace Project.Controllers
 {
@@ -18,11 +19,23 @@ namespace Project.Controllers
     {
         private readonly IUserService _userService;
         private readonly IHashPasswordService _hashPasswordService;
+        private readonly IValidationService _validationService;
+        private readonly IJWTService _jwtService;
+        private readonly IConfiguration _config;
 
-        public UserController(IUserService userService, IHashPasswordService hashPasswordService)
+        public UserController(
+            IUserService userService, 
+            IHashPasswordService hashPasswordService, 
+            IValidationService validationService, 
+            IJWTService jWTService,
+            IConfiguration configuration
+            )
         {
             _userService = userService;
             _hashPasswordService = hashPasswordService;
+            _validationService = validationService;
+            _jwtService = jWTService;
+            _config = configuration;
         }
         [HttpPost("add-user", Name = "AddUser")]
         public async Task<IActionResult> AddUser(UserRegisterRequestDTO request)
@@ -30,6 +43,18 @@ namespace Project.Controllers
             try
             {
                 UserModel user = new UserModel();
+
+                var passwordValidation = await _validationService.ValidatePassword(request.Password);
+                if (!passwordValidation.Status)
+                {
+                    return BadRequest(passwordValidation);
+                }
+
+                var emailValidation = await _validationService.ValidateEmail(request.Email);
+                if (!emailValidation.Status)
+                {
+                    return BadRequest(emailValidation);
+                }
 
                 Guid userId = Guid.NewGuid();
                 var hashedPassword = await _hashPasswordService.HashPassword(request.Password);
@@ -60,6 +85,17 @@ namespace Project.Controllers
         {
             try
             {
+                var passwordValidation = await _validationService.ValidatePassword(request.Password);
+                if (!passwordValidation.Status)
+                {
+                    return BadRequest(passwordValidation);
+                }
+
+                var emailValidation = await _validationService.ValidateEmail(request.Email);
+                if (!emailValidation.Status)
+                {
+                    return BadRequest(emailValidation);
+                }
                 var UserExist = await _userService.UserExist(request.Email);
                 if (!UserExist.Status)
                 {
@@ -71,7 +107,19 @@ namespace Project.Controllers
                     var authenticationResult = await _userService.AuthenticateUser(request.Password, userData.Password);
                     if (authenticationResult.Status)
                     {
-                        return Ok(new GeneralResponseInternalDTO(true, "Authentication successful"));
+                        try
+                        {
+                            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+                            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+                            var JWTToken = _jwtService.GenerateJwtToken(securityKey, credentials, request.Email);
+
+                            return Ok(new GeneralResponseInternalDTO(true, JWTToken, "User Login successful"));
+                        }
+                        catch (Exception ex)
+                        {
+                            var response = new GeneralResponseDTO(false, ex.Message);
+                            return BadRequest(response);
+                        }
                     }
                     else
                     {
