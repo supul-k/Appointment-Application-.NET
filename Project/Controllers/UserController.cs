@@ -55,6 +55,12 @@ namespace Project.Controllers
                 {
                     return BadRequest(emailValidation);
                 }
+                var UserExist = await _userService.UserExist(request.Email);
+                if (UserExist.Status)
+                {
+                    var response = new GeneralResponseDTO(UserExist.Status, "Email already Exist!");
+                    return BadRequest(response);
+                }
 
                 Guid userId = Guid.NewGuid();
                 var hashedPassword = await _hashPasswordService.HashPassword(request.Password);

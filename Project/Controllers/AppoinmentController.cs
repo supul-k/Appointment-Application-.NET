@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Project.DataBaseAccess;
 using Project.DTO;
 using Project.Interfaces.IServices;
@@ -7,6 +8,7 @@ using Project.Repositories;
 
 namespace Project.Controllers
 {
+    //[Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class AppoinmentController : ControllerBase
@@ -21,6 +23,7 @@ namespace Project.Controllers
             _userService = userService;
             _validationService = validationService;
         }
+
         [HttpPost("add-appoinment", Name = "AddAppoinment")]
         public async Task<IActionResult> AddAppoinment(AppoinmentAddRequestDTO request)
         {
